@@ -1,0 +1,18 @@
+# Python specific
+__pycache__/
+*.pyc
+.Python
+.venv/
+env/
+venv/
+
+# Flask specific
+*.egg-info/
+.flaskenv
+
+# Your data file
+bank_data.json
+
+# Ngrok
+ngrok
+ngrok.exe
