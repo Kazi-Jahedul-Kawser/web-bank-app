@@ -1,0 +1,24 @@
+{
+    "bank_name": "Bank Of PRB",
+    "total_balance": 1110,
+    "total_loan": 10,
+    "loan_feature_active": true,
+    "bank_rupt": false,
+    "users": {
+        "1001": {
+            "name": "Estiak",
+            "email": "estiak@gmail.com",
+            "address": "Feni",
+            "account_type": "Savings",
+            "balance": 1010,
+            "get_loan": 0,
+            "loan_balance": 0,
+            "transaction_history": [
+                "Deposited: 10",
+                "Deposited: 1000"
+            ],
+            "password": "123",
+            "account_number": 1001
+        }
+    }
+}

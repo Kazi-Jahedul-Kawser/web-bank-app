@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 import os
 import json
 
@@ -10,9 +10,6 @@ from admin import Admin
 app = Flask(__name__)
 
 # --- Global Bank Instance and Data Persistence ---
-# For simplicity, we'll use a JSON file to save/load bank state.
-# In a real application, you would use a database (e.g., SQLite, PostgreSQL).
-
 BANK_DATA_FILE = 'bank_data.json'
 bank = None # Initialize bank as None, it will be loaded or created
 
@@ -38,7 +35,8 @@ def load_bank_data():
                     user_data['address'],
                     user_data['account_type'],
                     bank,
-                    user_data['password']
+                    # Ensure password is treated as a string when reconstructing
+                    str(user_data['password']) 
                 )
                 user.balance = user_data['balance']
                 user.get_loan = user_data['get_loan']
@@ -49,12 +47,14 @@ def load_bank_data():
             print("Bank data loaded successfully.")
     else:
         # Create a new bank instance if no data file exists
-        bank = Bank("My Awesome Web Bank")
+        bank = Bank("Bank OF PRB")
         print("New bank instance created.")
     
     # Also create a default admin if none exists (for testing)
+    # NOTE: In a real app, admin accounts should be created and managed securely,
+    # not hardcoded or created on every startup.
     if not any(isinstance(user_obj, Admin) for user_obj in bank.admins):
-        default_admin = Admin("Admin User", "admin@example.com", "Admin City", bank)
+        default_admin = Admin("Admin User", "admin@example.com", "Admin City", bank, password="123")
         bank.admins.append(default_admin)
         print("Default admin created.")
 
@@ -79,7 +79,7 @@ def save_bank_data():
             'get_loan': user_obj.get_loan,
             'loan_balance': user_obj.loan_balance,
             'transaction_history': user_obj.transaction_history,
-            'password': user_obj.password,
+            'password': user_obj.password, # Password is now stored as string
             'account_number': user_obj.account_number # Store it explicitly
         }
     
@@ -91,41 +91,71 @@ def save_bank_data():
 with app.app_context():
     load_bank_data()
 
-# --- Flask Routes ---
-
+# --- Flask Routes for UI Pages ---
 @app.route('/')
 def index():
-    return render_template('index.html') # We'll create this HTML file
+    return render_template('index.html', bank_name=bank.bank_name)
 
-# Example User Login API endpoint
+@app.route('/user_login')
+def user_login_page():
+    return render_template('user_login.html', bank_name=bank.bank_name)
+
+@app.route('/user_register')
+def user_register_page():
+    return render_template('user_register.html', bank_name=bank.bank_name)
+
+@app.route('/admin_login')
+def admin_login_page():
+    return render_template('admin_login.html', bank_name=bank.bank_name)
+
+# Route for user dashboard
+@app.route('/user_dashboard')
+def user_dashboard():
+    # In a real app, you'd add authentication check here
+    return render_template('user_dashboard.html', bank_name=bank.bank_name)
+
+# Route for admin dashboard
+@app.route('/admin_dashboard')
+def admin_dashboard():
+    # In a real app, you'd add authentication check here
+    return render_template('admin_dashboard.html', bank_name=bank.bank_name)
+
+
+# --- API Endpoints ---
+
+# User Login API endpoint
 @app.route('/api/user/login', methods=['POST'])
-def user_login():
+def user_login_api(): # Renamed to avoid conflict with the page route
     data = request.json
     account_number = data.get('account_number')
     password = data.get('password')
 
     user = bank.users.get(int(account_number))
-    if user and user.password == int(password): # Assuming password is int as per your code
-        # For a real app, you'd use sessions or JWTs for stateful login.
-        # For simplicity, we'll just return success.
-        return jsonify({"success": True, "message": f"Welcome {user.name}!", "account_number": user.account_number})
+    # Passwords should be compared as strings now
+    if user and user.password == password: 
+        return jsonify({"success": True, "message": f"Welcome {user.name}!", "account_number": user.account_number, "name": user.name})
     else:
         return jsonify({"success": False, "message": "Invalid credentials"}), 401
 
-# Example User Registration API endpoint
+# User Registration API endpoint
 @app.route('/api/user/register', methods=['POST'])
-def user_register():
+def user_register(): # Renamed to avoid conflict with the page route
     data = request.json
     name = data.get('name')
     email = data.get('email')
     address = data.get('address')
     account_type = data.get('account_type')
-    password = data.get('password')
+    password = data.get('password') # Keep password as string
 
     if not all([name, email, address, account_type, password]):
         return jsonify({"success": False, "message": "All fields are required"}), 400
 
-    new_user = User(name, email, address, account_type, bank, int(password))
+    # Check if a user with this email already exists
+    for existing_user in bank.users.values():
+        if existing_user.email == email:
+            return jsonify({"success": False, "message": "User with this email already exists."}), 400
+
+    new_user = User(name, email, address, account_type, bank, password) # Pass password as string
     bank.users[new_user.account_number] = new_user
     save_bank_data() # Save data after registration
     return jsonify({
@@ -133,8 +163,6 @@ def user_register():
         "message": f"Account created successfully! Account number is {new_user.account_number}",
         "account_number": new_user.account_number
     })
-
-# ... inside app.py, after the login/register routes ...
 
 @app.route('/api/user/deposit', methods=['POST'])
 def user_deposit():
@@ -248,6 +276,20 @@ def get_transaction_history(account_number):
     return jsonify({"success": True, "history": user.transaction_history})
 
 # --- Admin API Endpoints ---
+# NOTE: Admin login is hardcoded for demonstration. For a real application,
+# implement secure admin account management and authentication.
+@app.route('/api/admin/login', methods=['POST'])
+def admin_login_api():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    # Hardcoded admin credentials for demonstration
+    if username == "admin" and password == "123":
+        return jsonify({"success": True, "message": "Admin login successful!"})
+    else:
+        return jsonify({"success": False, "message": "Invalid admin credentials"}), 401
+
 @app.route('/api/admin/create_account', methods=['POST'])
 def admin_create_account():
     data = request.json
@@ -271,7 +313,7 @@ def admin_create_account():
             return jsonify({"success": False, "message": "User with this email already exists."}), 400
 
     try:
-        new_user = User(name, email, address, account_type, bank, int(password))
+        new_user = User(name, email, address, account_type, bank, password) # Pass password as string
         bank.users[new_user.account_number] = new_user # Your Admin class also adds this, but ensure consistency
         save_bank_data()
         return jsonify({
@@ -295,6 +337,11 @@ def admin_delete_account():
     admin_obj = bank.admins[0] if bank.admins else Admin("Temp Admin", "temp@example.com", "Temp City", bank)
     
     if account_number in bank.users:
+        # Before deleting, update total_balance and total_loan if the user had funds/loans
+        user_to_delete = bank.users[account_number]
+        bank.total_balance -= user_to_delete.balance
+        bank.total_loan -= user_to_delete.loan_balance
+        
         admin_obj.delete_account(account_number) # This modifies bank.users directly
         save_bank_data()
         return jsonify({"success": True, "message": f"Account {account_number} deleted successfully."})
@@ -310,6 +357,15 @@ def admin_total_balance():
 def admin_total_loan():
     # In a real app, you'd check admin login.
     return jsonify({"success": True, "total_loan": bank.total_loan})
+
+@app.route('/api/admin/bank_status', methods=['GET'])
+def admin_bank_status():
+    # New endpoint to get bank's loan feature and bankrupt status
+    return jsonify({
+        "success": True,
+        "loan_feature_active": bank.loan_feature_active,
+        "bank_rupt": bank.bank_rupt
+    })
 
 @app.route('/api/admin/all_users', methods=['GET'])
 def admin_show_all_users():
@@ -339,11 +395,10 @@ def admin_toggle_bankrupt_status():
     save_bank_data()
     status = "activated" if bank.bank_rupt else "deactivated"
     return jsonify({"success": True, "message": f"Bankrupt status {status}. All transactions are {'off' if bank.bank_rupt else 'on'} now."})
-# --- Add more API endpoints for user and admin actions here ---
-# (We will add these in the next steps based on your admin.py and user.py)
 
 if __name__ == '__main__':
     # Ensure the 'static' and 'templates' folders exist for Flask to find assets
-    os.makedirs('static', exist_ok=True)
+    os.makedirs('static/css', exist_ok=True)
+    os.makedirs('static/js', exist_ok=True) 
     os.makedirs('templates', exist_ok=True)
     app.run(debug=True) # debug=True allows hot-reloading and helpful error messages

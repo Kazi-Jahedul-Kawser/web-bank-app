@@ -536,6 +536,34 @@ async function showAllUsers() {
     }
 }
 
+document.addEventListener('DOMContentLoaded', function() {
+    fetchBankStatus();
+});
+
+function fetchBankStatus() {
+    fetch('/api/admin/bank_status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const loanStatusElement = document.getElementById('loanFeatureStatus'); // Assuming you add this ID to your HTML
+                if (loanStatusElement) {
+                    loanStatusElement.textContent = data.loan_feature_active ? 'Active' : 'Inactive';
+                    loanStatusElement.style.color = data.loan_feature_active ? 'green' : 'red';
+                }
+
+                const bankruptStatusElement = document.getElementById('bankruptStatus'); // Assuming you add this ID to your HTML
+                if (bankruptStatusElement) {
+                    bankruptStatusElement.textContent = data.bank_rupt ? 'Yes' : 'No';
+                    bankruptStatusElement.style.color = data.bank_rupt ? 'red' : 'green';
+                }
+            } else {
+                console.error('Failed to fetch bank status:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching bank status:', error);
+        });
+}
 async function toggleLoanFeature() {
     const messageDiv = document.getElementById('dashboard-message');
     try {
@@ -569,3 +597,4 @@ async function toggleBankruptStatus() {
 
 // Initial state: show authentication section
 document.addEventListener('DOMContentLoaded', showAuthSection);
+

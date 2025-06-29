@@ -1,18 +1,18 @@
-# Python specific
-__pycache__/
-*.pyc
-.Python
-.venv/
-env/
-venv/
+# [cite_start]Python specific [cite: 2]
+[cite_start]__pycache__/ [cite: 2]
+[cite_start]*.pyc [cite: 2]
+[cite_start].Python [cite: 2]
+[cite_start].venv/ [cite: 2]
+[cite_start]env/ [cite: 2]
+[cite_start]venv/ [cite: 2]
 
-# Flask specific
-*.egg-info/
-.flaskenv
+# [cite_start]Flask specific [cite: 2]
+[cite_start]*.egg-info/ [cite: 2]
+[cite_start].flaskenv [cite: 2]
 
 # Your data file
-bank_data.json
+[cite_start]bank_data.json [cite: 2]
 
 # Ngrok
-ngrok
-ngrok.exe
+[cite_start]ngrok [cite: 2]
+[cite_start]ngrok.exe [cite: 2]

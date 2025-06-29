@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+
+{% block title %}User Dashboard{% endblock %}
+
+{% block content %}
+<h2 class="mb-4 text-center">Welcome to Your Dashboard, <span id="userNameDisplay" class="text-primary"></span>!</h2>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <!-- Message display area -->
+        <div id="dashboardMessage" class="alert d-none" role="alert"></div>
+
+        <div class="card shadow-lg rounded-3 mb-4">
+            <div class="card-header bg-info text-white text-center py-3">
+                <h4 class="mb-0">Account Summary</h4>
+            </div>
+            <div class="card-body text-center p-4">
+                <p class="fs-5">Account Number: <strong id="accountNumberDisplay"></strong></p>
+                <p class="fs-4">Current Balance: <strong id="balanceDisplay" class="text-success">Loading...</strong></p>
+                <button class="btn btn-info btn-sm rounded-pill mt-2" onclick="checkBalance()">Refresh Balance</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-lg rounded-3 mb-4">
+            <div class="card-header bg-primary text-white text-center py-3">
+                <h4 class="mb-0">Account Actions</h4>
+            </div>
+            <div class="card-body p-4 text-center">
+                <div class="d-grid gap-3 d-md-flex justify-content-center flex-wrap">
+                    <button class="btn btn-success btn-lg rounded-pill" onclick="openDepositModal()">Deposit</button>
+                    <button class="btn btn-warning btn-lg rounded-pill" onclick="openWithdrawModal()">Withdraw</button>
+                    <button class="btn btn-info btn-lg rounded-pill" onclick="openTakeLoanModal()">Take Loan</button>
+                    <button class="btn btn-secondary btn-lg rounded-pill" onclick="openTransferModal()">Transfer</button>
+                    <button class="btn btn-primary btn-lg rounded-pill" onclick="viewHistory()">Transaction History</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-lg rounded-3 mb-4">
+            <div class="card-header bg-dark text-white text-center py-3">
+                <h4 class="mb-0">Your Last Transactions</h4>
+            </div>
+            <ul class="list-group list-group-flush" id="transactionHistoryList">
+                <li class="list-group-item text-muted text-center">No transactions yet.</li>
+                <!-- Transactions will be loaded here by JavaScript -->
+            </ul>
+            <div class="card-footer text-center">
+                <button class="btn btn-outline-dark btn-sm rounded-pill" onclick="viewHistory()">Load All History</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="text-center mt-5 mb-4">
+    <button class="btn btn-danger btn-lg rounded-pill shadow" onclick="logout()">Logout</button>
+</div>
+
+<!-- Modals for Account Actions -->
+
+<!-- Deposit Modal -->
+<div class="modal fade" id="depositModal" tabindex="-1" aria-labelledby="depositModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="depositModalLabel">Deposit Funds</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="depositForm">
+                    <div class="mb-3">
+                        <label for="depositAmount" class="form-label">Amount</label>
+                        <input type="number" class="form-control" id="depositAmount" min="1" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success mt-3">Deposit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Withdraw Modal -->
+<div class="modal fade" id="withdrawModal" tabindex="-1" aria-labelledby="withdrawModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="withdrawModalLabel">Withdraw Funds</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="withdrawForm">
+                    <div class="mb-3">
+                        <label for="withdrawAmount" class="form-label">Amount</label>
+                        <input type="number" class="form-control" id="withdrawAmount" min="1" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-warning mt-3">Withdraw</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Take Loan Modal -->
+<div class="modal fade" id="takeLoanModal" tabindex="-1" aria-labelledby="takeLoanModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="takeLoanModalLabel">Apply for Loan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="takeLoanForm">
+                    <div class="mb-3">
+                        <label for="loanAmount" class="form-label">Loan Amount</label>
+                        <input type="number" class="form-control" id="loanAmount" min="1" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-info mt-3">Apply Loan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transfer Money Modal -->
+<div class="modal fade" id="transferModal" tabindex="-1" aria-labelledby="transferModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title" id="transferModalLabel">Transfer Money</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="transferForm">
+                    <div class="mb-3">
+                        <label for="receiverAccountNumber" class="form-label">Recipient Account Number</label>
+                        <input type="number" class="form-control" id="receiverAccountNumber" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="transferAmount" class="form-label">Amount</label>
+                        <input type="number" class="form-control" id="transferAmount" min="1" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-secondary mt-3">Transfer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const accountNumber = localStorage.getItem('account_number');
+    const userName = localStorage.getItem('user_name');
+    const messageDiv = document.getElementById('dashboardMessage');
+
+    // Bootstrap Modal instances (declared globally to be accessible)
+    let depositModal;
+    let withdrawModal;
+    let takeLoanModal;
+    let transferModal;
+
+    // Function to display messages
+    function showMessage(message, type) {
+        messageDiv.innerText = message;
+        messageDiv.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning', 'alert-info');
+        messageDiv.classList.add(`alert-${type}`);
+        // Optional: Hide message after a few seconds
+        setTimeout(() => {
+            messageDiv.classList.add('d-none');
+        }, 5000); // Message disappears after 5 seconds
+    }
+
+    // Basic authentication check
+    if (!accountNumber || !userName) {
+        // Replaced alert with showMessage
+        showMessage("Please log in to access the dashboard.", "danger");
+        setTimeout(() => {
+            console.log("Redirecting to user login..."); // Debugging log
+            window.location.assign('/user_login'); // Using assign for robustness
+        }, 2000);
+    } else {
+        document.getElementById('userNameDisplay').innerText = userName;
+        document.getElementById('accountNumberDisplay').innerText = accountNumber;
+        checkBalance(); // Load balance on dashboard load
+        viewHistory(); // Load history on dashboard load
+    }
+
+    // Initialize modals once DOM is ready and Bootstrap is available
+    document.addEventListener('DOMContentLoaded', () => {
+        // Check if bootstrap is defined before initializing modals
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            depositModal = new bootstrap.Modal(document.getElementById('depositModal'));
+            withdrawModal = new bootstrap.Modal(document.getElementById('withdrawModal'));
+            takeLoanModal = new bootstrap.Modal(document.getElementById('takeLoanModal'));
+            transferModal = new bootstrap.Modal(document.getElementById('transferModal'));
+
+            // Event listeners for form submissions within modals
+            document.getElementById('depositForm').addEventListener('submit', handleDepositSubmit);
+            document.getElementById('withdrawForm').addEventListener('submit', handleWithdrawSubmit);
+            document.getElementById('takeLoanForm').addEventListener('submit', handleTakeLoanSubmit);
+            document.getElementById('transferForm').addEventListener('submit', handleTransferSubmit);
+        } else {
+            console.error("Bootstrap JavaScript not loaded. Cannot initialize modals.");
+            showMessage("Error: Banking features may not work correctly. Please ensure Bootstrap JS is loaded.", "danger");
+        }
+    });
+
+    async function checkBalance() {
+        messageDiv.classList.add('d-none'); // Clear previous messages
+        try {
+            const response = await fetch(`/api/user/balance/${accountNumber}`);
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById('balanceDisplay').innerText = `৳${data.balance}`;
+                showMessage("Balance updated successfully.", "success");
+            } else {
+                showMessage(data.message, "danger");
+                document.getElementById('balanceDisplay').innerText = 'Error loading balance';
+            }
+        } catch (error) {
+            console.error('Error fetching balance:', error);
+            showMessage('Could not fetch balance. Please check your connection.', "danger");
+        }
+    }
+
+    // Functions to open modals
+    function openDepositModal() {
+        // Clear previous input when opening the modal
+        document.getElementById('depositAmount').value = '';
+        depositModal.show();
+    }
+
+    function openWithdrawModal() {
+        // Clear previous input when opening the modal
+        document.getElementById('withdrawAmount').value = '';
+        withdrawModal.show();
+    }
+
+    function openTakeLoanModal() {
+        // Clear previous input when opening the modal
+        document.getElementById('loanAmount').value = '';
+        takeLoanModal.show();
+    }
+
+    function openTransferModal() {
+        // Clear previous inputs when opening the modal
+        document.getElementById('receiverAccountNumber').value = '';
+        document.getElementById('transferAmount').value = '';
+        transferModal.show();
+    }
+
+    // Handlers for modal form submissions
+    async function handleDepositSubmit(event) {
+        event.preventDefault();
+        const amount = document.getElementById('depositAmount').value;
+        messageDiv.classList.add('d-none'); // Clear dashboard messages
+
+        if (amount && parseInt(amount) > 0) {
+            try {
+                const response = await fetch('/api/user/deposit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ account_number: parseInt(accountNumber), amount: parseInt(amount) })
+                });
+                const data = await response.json();
+                showMessage(data.message, data.success ? "success" : "danger");
+                if (data.success) {
+                    depositModal.hide(); // Hide modal on success
+                    document.getElementById('depositForm').reset(); // Clear form
+                    checkBalance();
+                    viewHistory();
+                }
+            } catch (error) {
+                console.error('Error depositing:', error);
+                showMessage('Error depositing. Please try again.', "danger");
+            }
+        } else {
+            showMessage('Invalid amount. Please enter a positive number.', "warning");
+        }
+    }
+
+    async function handleWithdrawSubmit(event) {
+        event.preventDefault();
+        const amount = document.getElementById('withdrawAmount').value;
+        messageDiv.classList.add('d-none'); // Clear dashboard messages
+
+        if (amount && parseInt(amount) > 0) {
+            try {
+                const response = await fetch('/api/user/withdraw', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ account_number: parseInt(accountNumber), amount: parseInt(amount) })
+                });
+                const data = await response.json();
+                showMessage(data.message, data.success ? "success" : "danger");
+                if (data.success) {
+                    withdrawModal.hide(); // Hide modal on success
+                    document.getElementById('withdrawForm').reset(); // Clear form
+                    checkBalance();
+                    viewHistory();
+                }
+            } catch (error) {
+                console.error('Error withdrawing:', error);
+                showMessage('Error withdrawing. Please try again.', "danger");
+            }
+        } else {
+            showMessage('Invalid amount. Please enter a positive number.', "warning");
+        }
+    }
+
+    async function handleTakeLoanSubmit(event) {
+        event.preventDefault();
+        const amount = document.getElementById('loanAmount').value;
+        messageDiv.classList.add('d-none'); // Clear dashboard messages
+
+        if (amount && parseInt(amount) > 0) {
+            try {
+                const response = await fetch('/api/user/loan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ account_number: parseInt(accountNumber), amount: parseInt(amount) })
+                });
+                const data = await response.json();
+                showMessage(data.message, data.success ? "success" : "danger");
+                if (data.success) {
+                    takeLoanModal.hide(); // Hide modal on success
+                    document.getElementById('takeLoanForm').reset(); // Clear form
+                    checkBalance();
+                    viewHistory();
+                }
+            } catch (error) {
+                console.error('Error taking loan:', error);
+                showMessage('Error taking loan. Please try again.', "danger");
+            }
+        } else {
+            showMessage('Invalid amount. Please enter a positive number.', "warning");
+        }
+    }
+
+    async function handleTransferSubmit(event) {
+        event.preventDefault();
+        const receiverAcc = document.getElementById('receiverAccountNumber').value;
+        const amount = document.getElementById('transferAmount').value;
+        messageDiv.classList.add('d-none'); // Clear dashboard messages
+
+        if (receiverAcc && amount && parseInt(amount) > 0) {
+            try {
+                const response = await fetch('/api/user/transfer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sender_account_number: parseInt(accountNumber),
+                        receiver_account_number: parseInt(receiverAcc),
+                        amount: parseInt(amount)
+                    })
+                });
+                const data = await response.json();
+                showMessage(data.message, data.success ? "success" : "danger");
+                if (data.success) {
+                    transferModal.hide(); // Hide modal on success
+                    document.getElementById('transferForm').reset(); // Clear form
+                    checkBalance();
+                    viewHistory();
+                }
+            } catch (error) {
+                console.error('Error transferring:', error);
+                showMessage('Error transferring. Please try again.', "danger");
+            }
+        } else {
+            showMessage('Invalid input. Please enter valid recipient account and a positive amount.', "warning");
+        }
+    }
+
+
+    async function viewHistory() {
+        messageDiv.classList.add('d-none'); // Clear dashboard messages
+        try {
+            const response = await fetch(`/api/user/history/${accountNumber}`);
+            const data = await response.json();
+            const historyList = document.getElementById('transactionHistoryList');
+            historyList.innerHTML = ''; // Clear previous history
+
+            if (data.success && data.history.length > 0) {
+                data.history.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item';
+                    li.innerText = item;
+                    historyList.appendChild(li);
+                });
+                showMessage("Transaction history loaded.", "success");
+            } else {
+                const li = document.createElement('li');
+                li.className = 'list-group-item text-muted text-center';
+                li.innerText = 'No transactions yet.';
+                historyList.appendChild(li);
+                showMessage(data.message || "No transactions found.", "info");
+            }
+        } catch (error) {
+            console.error('Error fetching history:', error);
+            showMessage('Could not fetch transaction history. Please try again.', "danger");
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('account_number');
+        localStorage.removeItem('user_name');
+        showMessage('You have been logged out.', 'info');
+        setTimeout(() => {
+            window.location.assign('/user_login');
+        }, 1500); // Redirect after 1.5 seconds
+    }
+</script>
+{% endblock %}

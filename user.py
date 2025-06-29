@@ -7,7 +7,7 @@ class Person(ABC):
         
 class User(Person):
     __account_cnt = 1000
-    def __init__(self, name, email, address, account_type, bank,password):
+    def __init__(self, name, email, address, account_type, bank, password):
         super().__init__(name, email, address)
         self.account_type = account_type
         self.balance = 0
@@ -16,7 +16,9 @@ class User(Person):
         self.transaction_history = []
         self.account_number = User.generate_account_number()
         self.bank = bank
-        self.password = password 
+        # Store password as a string to avoid type mismatches during login
+        self.password = str(password) 
+
     @classmethod
     def generate_account_number(cls):
         cls.__account_cnt+=1
@@ -63,7 +65,7 @@ class User(Person):
             if other_account_no in self.bank.users:
                 account = self.bank.users[other_account_no]
                 account.balance += amount
-                self.balance -= amount 
+                self.balance -= amount
                 print(f'Transfer {amount} to {account.account_number} Successfully. New balance is : {self.balance} Taka')
                 account.transaction_history.append(f'Received Money {amount} from {self.account_number}')
                 
@@ -74,4 +76,3 @@ class User(Person):
         
         else:
             print(f"Sorry! The {self.bank.name} bank is bankrupt")
-                   

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - {{ bank_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Admin Dashboard</h1>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <h2>Bank Status</h2>
+                <p>Total Balance: <span id="adminTotalBalance">Loading...</span> Taka</p>
+                <p>Total Loan: <span id="adminTotalLoan">Loading...</span> Taka</p>
+                <p>Loan Feature: <span id="loanFeatureStatus">Loading...</span></p>
+                <p>Bankrupt Status: <span id="bankruptStatus">Loading...</span></p>
+                <button onclick="fetchBankStatus()">Refresh Status</button>
+            </div>
+
+            <div class="card">
+                <h2>Manage Users</h2>
+                <button onclick="showAllUsers()">Show All Users</button>
+                <div id="allUsersOutput" class="history-output"></div>
+            </div>
+            
+            <div class="card">
+                <h2>Create User Account</h2>
+                <input type="text" id="admin_reg_name" placeholder="Name" required>
+                <input type="email" id="admin_reg_email" placeholder="Email" required>
+                <input type="text" id="admin_reg_address" placeholder="Address" required>
+                <select id="admin_reg_account_type" required>
+                    <option value="">Select Account Type</option>
+                    <option value="Savings">Savings</option>
+                    <option value="Current">Current</option>
+                </select>
+                <input type="password" id="admin_reg_password" placeholder="Password" required>
+                <button onclick="adminCreateAccount()">Create Account</button>
+                <p id="adminCreateAccountMessage" class="message"></p>
+            </div>
+
+            <div class="card">
+                <h2>Delete User Account</h2>
+                <input type="number" id="deleteAccountNumber" placeholder="Account Number to Delete" required>
+                <button onclick="adminDeleteAccount()">Delete Account</button>
+                <p id="adminDeleteAccountMessage" class="message"></p>
+            </div>
+
+            <div class="card">
+                <h2>Toggle Loan Feature</h2>
+                <button onclick="toggleLoanFeature()">Toggle Loan</button>
+                <p id="toggleLoanMessage" class="message"></p>
+            </div>
+
+            <div class="card">
+                <h2>Toggle Bankrupt Status</h2>
+                <button onclick="toggleBankruptStatus()">Toggle Bankrupt</button>
+                <p id="toggleBankruptMessage" class="message"></p>
+            </div>
+        </div>
+
+        <button class="logout-button" onclick="adminLogout()">Logout</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchBankStatus();
+            showAllUsers();
+        });
+
+        async function fetchBankStatus() {
+            const balanceResponse = await fetch('/api/admin/total_balance');
+            const balanceData = await balanceResponse.json();
+            if (balanceData.success) {
+                document.getElementById('adminTotalBalance').textContent = balanceData.total_balance;
+            }
+
+            const loanResponse = await fetch('/api/admin/total_loan');
+            const loanData = await loanResponse.json();
+            if (loanData.success) {
+                document.getElementById('adminTotalLoan').textContent = loanData.total_loan;
+            }
+
+            // Fetch loan feature status (requires a new endpoint or modifying an existing one)
+            // For now, let's assume we can get it from total_balance endpoint or a new one.
+            // A more robust solution would be to have a dedicated /api/admin/bank_status endpoint.
+            const bankStatusResponse = await fetch('/api/admin/bank_status'); // Assuming this new endpoint exists
+            const bankStatusData = await bankStatusResponse.json();
+            if (bankStatusData.success) {
+                document.getElementById('loanFeatureStatus').textContent = bankStatusData.loan_feature_active ? 'Active' : 'Inactive';
+                document.getElementById('bankruptStatus').textContent = bankStatusData.bank_rupt ? 'Bankrupt' : 'Operational';
+            } else {
+                 document.getElementById('loanFeatureStatus').textContent = 'N/A';
+                 document.getElementById('bankruptStatus').textContent = 'N/A';
+            }
+        }
+
+        async function showAllUsers() {
+            const usersOutput = document.getElementById('allUsersOutput');
+            const response = await fetch('/api/admin/all_users');
+            const data = await response.json();
+            if (data.success) {
+                if (data.users && data.users.length > 0) {
+                    let userHtml = '<table><thead><tr><th>Name</th><th>Account No.</th><th>Balance</th><th>Email</th></tr></thead><tbody>';
+                    data.users.forEach(user => {
+                        userHtml += `<tr><td>${user.name}</td><td>${user.account_number}</td><td>${user.balance}</td><td>${user.email}</td></tr>`;
+                    });
+                    userHtml += '</tbody></table>';
+                    usersOutput.innerHTML = userHtml;
+                } else {
+                    usersOutput.innerHTML = '<p>No users found.</p>';
+                }
+            } else {
+                usersOutput.innerHTML = `<p style="color: red;">Error: ${data.message}</p>`;
+            }
+        }
+
+        async function adminCreateAccount() {
+            const name = document.getElementById('admin_reg_name').value;
+            const email = document.getElementById('admin_reg_email').value;
+            const address = document.getElementById('admin_reg_address').value;
+            const accountType = document.getElementById('admin_reg_account_type').value;
+            const password = document.getElementById('admin_reg_password').value;
+            const messageElement = document.getElementById('adminCreateAccountMessage');
+
+            if (!name || !email || !address || !accountType || !password) {
+                messageElement.textContent = "All fields are required.";
+                messageElement.style.color = 'red';
+                return;
+            }
+
+            const response = await fetch('/api/admin/create_account', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, address, account_type: accountType, password: parseInt(password) })
+            });
+            const data = await response.json();
+            if (data.success) {
+                messageElement.textContent = data.message;
+                messageElement.style.color = 'green';
+                document.getElementById('admin_reg_name').value = '';
+                document.getElementById('admin_reg_email').value = '';
+                document.getElementById('admin_reg_address').value = '';
+                document.getElementById('admin_reg_account_type').value = '';
+                document.getElementById('admin_reg_password').value = '';
+                showAllUsers(); // Refresh user list
+            } else {
+                messageElement.textContent = data.message;
+                messageElement.style.color = 'red';
+            }
+        }
+
+        async function adminDeleteAccount() {
+            const accountNumber = document.getElementById('deleteAccountNumber').value;
+            const messageElement = document.getElementById('adminDeleteAccountMessage');
+            if (!accountNumber) {
+                messageElement.textContent = "Please enter an account number.";
+                messageElement.style.color = 'red';
+                return;
+            }
+
+            const response = await fetch('/api/admin/delete_account', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ account_number: parseInt(accountNumber) })
+            });
+            const data = await response.json();
+            if (data.success) {
+                messageElement.textContent = data.message;
+                messageElement.style.color = 'green';
+                document.getElementById('deleteAccountNumber').value = '';
+                showAllUsers(); // Refresh user list
+                fetchBankStatus(); // Update total balance/loan if affected
+            } else {
+                messageElement.textContent = data.message;
+                messageElement.style.color = 'red';
+            }
+        }
+
+        async function toggleLoanFeature() {
+            const messageElement = document.getElementById('toggleLoanMessage');
+            const response = await fetch('/api/admin/toggle_loan_feature', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            if (data.success) {
+                messageElement.textContent = data.message;
+                messageElement.style.color = 'green';
+                fetchBankStatus(); // Update status display
+            } else {
+                messageElement.textContent = data.message;
+                messageElement.style.color = 'red';
+            }
+        }
+
+        async function toggleBankruptStatus() {
+            const messageElement = document.getElementById('toggleBankruptMessage');
+            const response = await fetch('/api/admin/toggle_bankrupt_status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            if (data.success) {
+                messageElement.textContent = data.message;
+                messageElement.style.color = 'green';
+                fetchBankStatus(); // Update status display
+            } else {
+                messageElement.textContent = data.message;
+                messageElement.style.color = 'red';
+            }
+        }
+
+        function adminLogout() {
+            // No specific admin login state managed here, just redirect to home
+            window.location.href = '/'; 
+        }
+    </script>
+</body>
+</html>

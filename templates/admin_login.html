@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - {{ bank_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container form-page">
+        <h1>Admin Login</h1>
+
+        <div class="card">
+            <form id="adminLoginForm">
+                <label for="admin_email">Admin Email:</label>
+                <input type="email" id="admin_email" placeholder="Enter Admin Email" required>
+                
+                <label for="admin_password">Admin Password:</label>
+                <input type="password" id="admin_password" placeholder="Enter Password" required>
+                
+                <button type="submit">Login</button>
+            </form>
+            <p id="adminLoginMessage" class="message"></p>
+            <p class="mt-10"><a href="{{ url_for('index') }}">Back to Home</a></p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('admin_email').value;
+            const password = document.getElementById('admin_password').value;
+
+            // This is a placeholder for admin authentication.
+            // In a real application, you'd send these credentials to a backend API
+            // that validates against actual admin accounts.
+            // For now, let's use a simple client-side check or a mock API call.
+            
+            // Mock Admin Login (replace with actual API call if you implement backend admin auth)
+            if (email === 'admin@example.com' && password === 'adminpass') { // Use a fixed password for simplicity or get from env
+                document.getElementById('adminLoginMessage').textContent = 'Admin login successful!';
+                document.getElementById('adminLoginMessage').style.color = 'green';
+                window.location.href = '/admin_dashboard';
+            } else {
+                document.getElementById('adminLoginMessage').textContent = 'Invalid admin credentials.';
+                document.getElementById('adminLoginMessage').style.color = 'red';
+            }
+
+            // Example of how you would call a backend API for admin login:
+            /*
+            const response = await fetch('/api/admin/login', { // You'd need to create this API endpoint
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById('adminLoginMessage').textContent = data.message;
+                document.getElementById('adminLoginMessage').style.color = 'green';
+                window.location.href = '/admin_dashboard';
+            } else {
+                document.getElementById('adminLoginMessage').textContent = data.message;
+                document.getElementById('adminLoginMessage').style.color = 'red';
+            }
+            */
+        });
+    </script>
+</body>
+</html>
